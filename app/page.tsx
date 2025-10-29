@@ -16,7 +16,7 @@ export default function LandingPage() {
           Beta
         </div>
 
-        <h1 style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>DIVWELLY</h1>
+        <h1 style={{ fontSize: '3.5rem', marginBottom: '4rem' }}>DIVWELLY</h1>
         <p className="text-lg text-muted mb-xl">
           Household expense splitting for flatmates.
         </p>
