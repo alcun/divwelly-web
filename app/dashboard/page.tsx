@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useForm } from '@tanstack/react-form'
+import Link from 'next/link'
 
 type Household = {
   household: {
@@ -25,11 +27,7 @@ export default function DashboardPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   
-  // Form states
-  const [householdName, setHouseholdName] = useState('')
-  const [inviteCode, setInviteCode] = useState('')
   const [error, setError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     loadHouseholds()
@@ -56,63 +54,63 @@ export default function DashboardPage() {
     }
   }
 
-  const handleCreateHousehold = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setSubmitting(true)
+  // Create Household Form
+  const createForm = useForm({
+    defaultValues: {
+      name: '',
+    },
+    onSubmit: async ({ value }) => {
+      setError('')
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/households`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: value.name }),
+        })
 
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/households`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: householdName }),
-      })
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || 'Failed to create household')
+        }
 
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to create household')
+        await loadHouseholds()
+        setShowCreateModal(false)
+        createForm.reset()
+      } catch (err: any) {
+        setError(err.message)
       }
+    },
+  })
 
-      // Reload households and close modal
-      await loadHouseholds()
-      setShowCreateModal(false)
-      setHouseholdName('')
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setSubmitting(false)
-    }
-  }
+  // Join Household Form
+  const joinForm = useForm({
+    defaultValues: {
+      inviteCode: '',
+    },
+    onSubmit: async ({ value }) => {
+      setError('')
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/households/join`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inviteCode: value.inviteCode.toUpperCase() }),
+        })
 
-  const handleJoinHousehold = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setSubmitting(true)
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || 'Failed to join household')
+        }
 
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/households/join`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteCode: inviteCode.toUpperCase() }),
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to join household')
+        await loadHouseholds()
+        setShowJoinModal(false)
+        joinForm.reset()
+      } catch (err: any) {
+        setError(err.message)
       }
-
-      // Reload households and close modal
-      await loadHouseholds()
-      setShowJoinModal(false)
-      setInviteCode('')
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setSubmitting(false)
-    }
-  }
+    },
+  })
 
   if (loading) {
     return <div className="p-8">Loading...</div>
@@ -133,7 +131,11 @@ export default function DashboardPage() {
           ) : (
             <div className="space-y-4">
               {households.map(({ household, member }) => (
-                <div key={household.id} className="border border-gray-200 rounded p-4 hover:border-gray-300 cursor-pointer">
+                <Link 
+                  key={household.id} 
+                  href={`/household/${household.id}`}
+                  className="block border border-gray-200 rounded p-4 hover:border-blue-500 hover:shadow-md transition-all"
+                >
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-bold">{household.name}</h3>
@@ -142,7 +144,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -166,24 +168,34 @@ export default function DashboardPage() {
 
       {/* Create Household Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h2 className="text-xl font-bold mb-4">Create Household</h2>
-            <form onSubmit={handleCreateHousehold}>
-              <div className="mb-4">
-                <label htmlFor="householdName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Household Name
-                </label>
-                <input
-                  id="householdName"
-                  type="text"
-                  required
-                  value={householdName}
-                  onChange={(e) => setHouseholdName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  placeholder="e.g. Flat 42, Smith Family"
-                />
-              </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                createForm.handleSubmit()
+              }}
+            >
+              <createForm.Field name="name">
+                {(field) => (
+                  <div className="mb-4">
+                    <label htmlFor="householdName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Household Name
+                    </label>
+                    <input
+                      id="householdName"
+                      type="text"
+                      required
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      placeholder="e.g. Flat 42, Smith Family"
+                    />
+                  </div>
+                )}
+              </createForm.Field>
 
               {error && (
                 <div className="mb-4 text-red-600 text-sm">{error}</div>
@@ -192,16 +204,15 @@ export default function DashboardPage() {
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
-                  {submitting ? 'Creating...' : 'Create'}
+                  Create
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setShowCreateModal(false)
-                    setHouseholdName('')
+                    createForm.reset()
                     setError('')
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
@@ -216,26 +227,36 @@ export default function DashboardPage() {
 
       {/* Join Household Modal */}
       {showJoinModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h2 className="text-xl font-bold mb-4">Join Household</h2>
-            <form onSubmit={handleJoinHousehold}>
-              <div className="mb-4">
-                <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700 mb-1">
-                  Invite Code
-                </label>
-                <input
-                  id="inviteCode"
-                  type="text"
-                  required
-                  maxLength={6}
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-lg tracking-wider"
-                  placeholder="ABC123"
-                />
-                <p className="text-xs text-gray-500 mt-1">Enter the 6-character code</p>
-              </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                joinForm.handleSubmit()
+              }}
+            >
+              <joinForm.Field name="inviteCode">
+                {(field) => (
+                  <div className="mb-4">
+                    <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700 mb-1">
+                      Invite Code
+                    </label>
+                    <input
+                      id="inviteCode"
+                      type="text"
+                      required
+                      maxLength={6}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value.toUpperCase())}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-lg tracking-wider"
+                      placeholder="ABC123"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Enter the 6-character code</p>
+                  </div>
+                )}
+              </joinForm.Field>
 
               {error && (
                 <div className="mb-4 text-red-600 text-sm">{error}</div>
@@ -244,16 +265,15 @@ export default function DashboardPage() {
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  disabled={submitting || inviteCode.length !== 6}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
-                  {submitting ? 'Joining...' : 'Join'}
+                  Join
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setShowJoinModal(false)
-                    setInviteCode('')
+                    joinForm.reset()
                     setError('')
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
