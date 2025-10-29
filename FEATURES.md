@@ -281,27 +281,39 @@
 
 ---
 
-## Recommended Next Steps
+## Recommended Next Steps (MVP Focus)
 
-### Phase 1: Core Improvements (1-2 weeks)
-1. ✅ Settle Up / Mark Balance as Paid
-2. ✅ Edit/Delete Expenses
-3. ✅ Expense Categories/Tags
+**See `MVP-REQUIREMENTS.md` for detailed real-world use case**
 
-### Phase 2: Organization (1 week)
-4. ✅ Date Filtering / Monthly View
-5. ✅ Expense History / Activity Feed
+### Phase 1: Payment Tracking (Week 1) ⭐ CRITICAL
+1. Individual payment tracking per expense
+2. Mark as paid functionality
+3. Upload payment receipt/screenshot
+4. Payment status indicators
 
-### Phase 3: Polish (1 week)
-6. ✅ User Profile / Settings
-7. ✅ Leave/Delete Household
-8. ✅ Export to CSV
+### Phase 2: Recurring Expenses (Week 2) ⭐ CRITICAL
+1. Set up recurring expenses (rent, bills, etc.)
+2. Auto-create expenses on schedule
+3. Edit/delete recurring expenses
+4. View upcoming recurring expenses
 
-### Phase 4: Advanced (optional)
-9. Invite by Email
-10. Recurring Expenses
-11. Custom Splits
-12. PWA + Notifications
+### Phase 3: Member Management (Week 3) ⭐ CRITICAL
+1. Leave household functionality
+2. Admin can remove/kick members
+3. Edit/delete expenses
+4. Expense categories
+
+### Phase 4: Polish & Launch
+1. Date filtering / monthly view
+2. Better error handling
+3. Loading states
+4. Test with real housemates
+
+### Phase 5: Advanced (Post-Launch)
+1. Notifications (email/push)
+2. Settle up (direct payments)
+3. Export to CSV
+4. Custom split amounts
 
 ---
 
