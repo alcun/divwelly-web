@@ -6,6 +6,8 @@
 ✅ Add expenses
 ✅ View balances (who owes whom)
 ✅ View members
+✅ Household info (address, postcode, WiFi, bins, emergency contacts, notes)
+✅ Promote members to admin
 ✅ SSR implementation
 ✅ Brutalist design system
 

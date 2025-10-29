@@ -80,6 +80,13 @@ middleware/
 - name (text)
 - inviteCode (text, unique, 6 chars)
 - createdById (uuid, fk -> users)
+- address (text, optional)
+- postcode (text, optional)
+- wifiName (text, optional)
+- wifiPassword (text, optional)
+- binCollection (text, optional)
+- emergencyContacts (text, optional)
+- notes (text, optional)
 - createdAt, updatedAt
 
 ### householdMembers
@@ -115,6 +122,8 @@ middleware/
 - `GET /api/households/:id/members` - List household members
 - `GET /api/households/:id/expenses` - List household expenses
 - `GET /api/households/:id/balances` - Get who owes whom
+- `PATCH /api/households/:id/info` - Update household info (admin only)
+- `PATCH /api/households/:id/members/:memberId/promote` - Promote member to admin
 
 ### Expenses
 - `POST /api/expenses` - Create expense
@@ -163,6 +172,10 @@ middleware/
 ✅ Add expenses (splits evenly among all members)
 ✅ View balances (calculated automatically)
 ✅ View household members
+✅ Household info management (address, postcode, WiFi, bins, emergency contacts, notes)
+✅ WiFi password with show/hide toggle
+✅ Promote members to admin
+✅ Admin-only controls for editing household info
 ✅ SSR for dashboard and household pages
 ✅ Cookie-based auth across subdomains
 ✅ Brutalist design system
@@ -181,6 +194,7 @@ middleware/
 - No user profile/settings page
 - No way to leave or delete household
 - No expense history or activity log
+- Cannot demote admins back to members
 
 ### Technical Debt
 - No loading states in some places
