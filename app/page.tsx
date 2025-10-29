@@ -19,7 +19,7 @@ export default function LoginPage() {
 
     try {
       const endpoint = isSignUp ? '/api/auth/sign-up/email' : '/api/auth/sign-in/email'
-      const body = isSignUp 
+      const body = isSignUp
         ? JSON.stringify({ email, password, name })
         : JSON.stringify({ email, password })
 
@@ -41,72 +41,75 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
-        <div>
-          <h2 className="text-3xl font-bold text-center">Divwelly</h2>
-          <p className="mt-2 text-center text-gray-600">
-            {isSignUp ? 'Create your account' : 'Sign in to your account'}
-          </p>
-        </div>
+    <div className="full-height">
+      <div className="container-sm">
+        <div className="card">
+          <div className="card-header">
+            <h1 className="text-center">Divwelly</h1>
+            <p className="text-center text-sm text-muted mt-sm">
+              {isSignUp ? 'Create your account' : 'Sign in to your account'}
+            </p>
+          </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {isSignUp && (
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
+          <form onSubmit={handleSubmit}>
+            {isSignUp && (
+              <div className="form-group">
+                <label htmlFor="name" className="form-label">Name</label>
+                <input
+                  id="name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+            )}
+
+            <div className="form-group">
+              <label htmlFor="email" className="form-label">Email</label>
               <input
-                id="name"
-                type="text"
+                id="email"
+                type="email"
                 required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="form-input"
               />
             </div>
-          )}
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
+            <div className="form-group">
+              <label htmlFor="password" className="form-label">Password</label>
+              <input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="form-input"
+              />
+            </div>
+
+            {error && <div className="error">{error}</div>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary btn-block mt-md"
+            >
+              {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
+            </button>
+          </form>
+
+          <div className="text-center mt-md">
+            <button
+              onClick={() => { setIsSignUp(!isSignUp); setError('') }}
+              className="link"
+              type="button"
+            >
+              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+            </button>
           </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-
-          {error && <div className="text-red-600 text-sm text-center">{error}</div>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
-          </button>
-        </form>
-
-        <div className="text-center">
-          <button
-            onClick={() => { setIsSignUp(!isSignUp); setError('') }}
-            className="text-sm text-blue-600 hover:text-blue-500"
-          >
-            {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-          </button>
         </div>
       </div>
     </div>

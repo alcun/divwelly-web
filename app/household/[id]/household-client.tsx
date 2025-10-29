@@ -114,90 +114,94 @@ export default function HouseholdClient({
   })
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <Link href="/dashboard" className="text-blue-600 hover:text-blue-700">
-            ← Back to Dashboard
-          </Link>
-        </div>
+    <div className="container">
+      <div className="mb-lg">
+        <Link href="/dashboard" className="link">
+          ← Back to Dashboard
+        </Link>
+      </div>
 
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h1 className="text-3xl font-bold">{initialHousehold.name}</h1>
-              <p className="text-gray-600">Invite Code: {initialHousehold.inviteCode}</p>
-            </div>
-            <button
-              onClick={() => setShowAddExpense(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Add Expense
-            </button>
+      <div className="card">
+        <div className="flex-between mb-lg">
+          <div>
+            <h1 className="mb-sm">{initialHousehold.name}</h1>
+            <p className="text-sm text-muted">Invite Code: {initialHousehold.inviteCode}</p>
           </div>
+          <button
+            onClick={() => setShowAddExpense(true)}
+            className="btn btn-primary"
+          >
+            Add Expense
+          </button>
         </div>
+      </div>
 
-        {/* Balances */}
-        {balances.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-xl font-bold mb-4">Balances</h2>
-            <div className="space-y-2">
-              {balances.map((balance, idx) => (
-                <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                  <span>
-                    <strong>{balance.from}</strong> owes <strong>{balance.to}</strong>
-                  </span>
-                  <span className="font-bold text-green-600">£{balance.amount}</span>
-                </div>
-              ))}
-            </div>
+      {/* Balances */}
+      {balances.length > 0 && (
+        <div className="card">
+          <div className="card-header">
+            <h2>Balances</h2>
           </div>
-        )}
-
-        {/* Members */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4">Members ({members.length})</h2>
-          <div className="space-y-2">
-            {members.map((member) => (
-              <div key={member.id} className="flex justify-between items-center p-3 border border-gray-200 rounded">
-                <div>
-                  <p className="font-medium">{member.name}</p>
-                  <p className="text-sm text-gray-600">{member.email}</p>
-                </div>
-                <span className="text-sm text-gray-500 capitalize">{member.role}</span>
+          <div>
+            {balances.map((balance, idx) => (
+              <div key={idx} className="list-item flex-between" style={{ cursor: 'default' }}>
+                <span>
+                  <strong>{balance.from}</strong> owes <strong>{balance.to}</strong>
+                </span>
+                <span className="text-bold" style={{ color: 'var(--accent)' }}>£{balance.amount}</span>
               </div>
             ))}
           </div>
         </div>
+      )}
 
-        {/* Expenses */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-4">Recent Expenses ({expenses.length})</h2>
-          {expenses.length === 0 ? (
-            <p className="text-gray-600">No expenses yet. Add one above!</p>
-          ) : (
-            <div className="space-y-2">
-              {expenses.map((expense) => (
-                <div key={expense.id} className="flex justify-between items-center p-3 border border-gray-200 rounded">
-                  <div>
-                    <p className="font-medium">{expense.description}</p>
-                    <p className="text-sm text-gray-600">
-                      Paid by {expense.paidByName} • {new Date(expense.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <span className="font-bold">£{expense.amount}</span>
-                </div>
-              ))}
-            </div>
-          )}
+      {/* Members */}
+      <div className="card">
+        <div className="card-header">
+          <h2>Members ({members.length})</h2>
         </div>
+        <div>
+          {members.map((member) => (
+            <div key={member.id} className="list-item flex-between" style={{ cursor: 'default' }}>
+              <div>
+                <p className="text-bold mb-sm">{member.name}</p>
+                <p className="text-sm text-muted">{member.email}</p>
+              </div>
+              <span className="badge">{member.role}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Expenses */}
+      <div className="card">
+        <div className="card-header">
+          <h2>Recent Expenses ({expenses.length})</h2>
+        </div>
+        {expenses.length === 0 ? (
+          <p className="text-muted">No expenses yet. Add one above!</p>
+        ) : (
+          <div>
+            {expenses.map((expense) => (
+              <div key={expense.id} className="list-item flex-between" style={{ cursor: 'default' }}>
+                <div>
+                  <p className="text-bold mb-sm">{expense.description}</p>
+                  <p className="text-sm text-muted">
+                    Paid by {expense.paidByName} • {new Date(expense.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <span className="text-bold">£{expense.amount}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Add Expense Modal */}
       {showAddExpense && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">Add Expense</h2>
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2 className="modal-title">Add Expense</h2>
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -207,8 +211,8 @@ export default function HouseholdClient({
             >
               <expenseForm.Field name="description">
                 {(field) => (
-                  <div className="mb-4">
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="form-group">
+                    <label htmlFor="description" className="form-label">
                       Description
                     </label>
                     <input
@@ -217,7 +221,7 @@ export default function HouseholdClient({
                       required
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="form-input"
                       placeholder="e.g. Groceries, Rent, Electricity"
                     />
                   </div>
@@ -226,8 +230,8 @@ export default function HouseholdClient({
 
               <expenseForm.Field name="amount">
                 {(field) => (
-                  <div className="mb-4">
-                    <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="form-group">
+                    <label htmlFor="amount" className="form-label">
                       Amount (£)
                     </label>
                     <input
@@ -237,21 +241,19 @@ export default function HouseholdClient({
                       required
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="form-input"
                       placeholder="0.00"
                     />
                   </div>
                 )}
               </expenseForm.Field>
 
-              {error && (
-                <div className="mb-4 text-red-600 text-sm">{error}</div>
-              )}
+              {error && <div className="error">{error}</div>}
 
-              <div className="flex gap-3">
+              <div className="grid grid-2 gap-md mt-md">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="btn btn-primary"
                 >
                   Add Expense
                 </button>
@@ -262,7 +264,7 @@ export default function HouseholdClient({
                     expenseForm.reset()
                     setError('')
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                  className="btn btn-secondary"
                 >
                   Cancel
                 </button>

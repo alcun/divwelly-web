@@ -96,66 +96,66 @@ export default function DashboardClient({ initialHouseholds }: Props) {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Divwelly</h1>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50"
-          >
-            Logout
-          </button>
+    <div className="container">
+      <div className="flex-between mb-lg">
+        <h1>Divwelly</h1>
+        <button
+          onClick={handleLogout}
+          className="btn btn-secondary"
+        >
+          Logout
+        </button>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <h2>Your Households</h2>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-4">Your Households</h2>
-          
-          {households.length === 0 ? (
-            <p className="text-gray-600">No households yet. Create one or join with an invite code.</p>
-          ) : (
-            <div className="space-y-4">
-              {households.map(({ household, member }) => (
-                <Link 
-                  key={household.id} 
-                  href={`/household/${household.id}`}
-                  className="block border border-gray-200 rounded p-4 hover:border-blue-500 hover:shadow-md transition-all"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-bold">{household.name}</h3>
-                      <p className="text-sm text-gray-600">
-                        Role: {member.role} • Code: {household.inviteCode}
-                      </p>
-                    </div>
+        {households.length === 0 ? (
+          <p className="text-muted mb-lg">No households yet. Create one or join with an invite code.</p>
+        ) : (
+          <div className="mb-lg">
+            {households.map(({ household, member }) => (
+              <Link
+                key={household.id}
+                href={`/household/${household.id}`}
+                className="list-item"
+              >
+                <div className="flex-between">
+                  <div>
+                    <h3 className="mb-sm">{household.name}</h3>
+                    <p className="text-sm text-muted">
+                      Role: {member.role} • Code: {household.inviteCode}
+                    </p>
                   </div>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          <div className="mt-6 flex gap-4">
-            <button 
-              onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Create Household
-            </button>
-            <button 
-              onClick={() => setShowJoinModal(true)}
-              className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-            >
-              Join with Code
-            </button>
+                </div>
+              </Link>
+            ))}
           </div>
+        )}
+
+        <div className="grid grid-2 gap-md">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="btn btn-primary"
+          >
+            Create Household
+          </button>
+          <button
+            onClick={() => setShowJoinModal(true)}
+            className="btn btn-secondary"
+          >
+            Join with Code
+          </button>
         </div>
       </div>
 
       {/* Create Household Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">Create Household</h2>
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2 className="modal-title">Create Household</h2>
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -165,8 +165,8 @@ export default function DashboardClient({ initialHouseholds }: Props) {
             >
               <createForm.Field name="name">
                 {(field) => (
-                  <div className="mb-4">
-                    <label htmlFor="householdName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="form-group">
+                    <label htmlFor="householdName" className="form-label">
                       Household Name
                     </label>
                     <input
@@ -175,21 +175,19 @@ export default function DashboardClient({ initialHouseholds }: Props) {
                       required
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="form-input"
                       placeholder="e.g. Flat 42, Smith Family"
                     />
                   </div>
                 )}
               </createForm.Field>
 
-              {error && (
-                <div className="mb-4 text-red-600 text-sm">{error}</div>
-              )}
+              {error && <div className="error">{error}</div>}
 
-              <div className="flex gap-3">
+              <div className="grid grid-2 gap-md mt-md">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="btn btn-primary"
                 >
                   Create
                 </button>
@@ -200,7 +198,7 @@ export default function DashboardClient({ initialHouseholds }: Props) {
                     createForm.reset()
                     setError('')
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                  className="btn btn-secondary"
                 >
                   Cancel
                 </button>
@@ -212,9 +210,9 @@ export default function DashboardClient({ initialHouseholds }: Props) {
 
       {/* Join Household Modal */}
       {showJoinModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">Join Household</h2>
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2 className="modal-title">Join Household</h2>
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -224,8 +222,8 @@ export default function DashboardClient({ initialHouseholds }: Props) {
             >
               <joinForm.Field name="inviteCode">
                 {(field) => (
-                  <div className="mb-4">
-                    <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="form-group">
+                    <label htmlFor="inviteCode" className="form-label">
                       Invite Code
                     </label>
                     <input
@@ -235,22 +233,21 @@ export default function DashboardClient({ initialHouseholds }: Props) {
                       maxLength={6}
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value.toUpperCase())}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-lg tracking-wider"
+                      className="form-input"
                       placeholder="ABC123"
+                      style={{ fontFamily: 'inherit', fontSize: '16px', letterSpacing: '2px', textAlign: 'center' }}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Enter the 6-character code</p>
+                    <p className="text-sm text-muted mt-sm">Enter the 6-character code</p>
                   </div>
                 )}
               </joinForm.Field>
 
-              {error && (
-                <div className="mb-4 text-red-600 text-sm">{error}</div>
-              )}
+              {error && <div className="error">{error}</div>}
 
-              <div className="flex gap-3">
+              <div className="grid grid-2 gap-md mt-md">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="btn btn-primary"
                 >
                   Join
                 </button>
@@ -261,7 +258,7 @@ export default function DashboardClient({ initialHouseholds }: Props) {
                     joinForm.reset()
                     setError('')
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                  className="btn btn-secondary"
                 >
                   Cancel
                 </button>
