@@ -261,10 +261,22 @@ bun run dev
 ## Next Steps
 
 See `FEATURES.md` for detailed feature roadmap and implementation plans.
+See `MVP-REQUIREMENTS.md` for detailed real-world use case.
+See `MONETIZATION.md` for business strategy, pricing, and growth plans.
 
-**Recommended Order:**
-1. Settle Up feature (core functionality)
-2. Edit/Delete expenses (usability)
-3. Expense categories (organization)
-4. Date filtering (analytics)
-5. Everything else...
+**Product Vision:**
+1. **Phase 1 (Weeks 1-3):** MVP for our household - payment tracking, recurring expenses, core features
+2. **Phase 2 (Months 1-2):** React Native mobile app (iOS + Android)
+3. **Phase 3 (Months 2-3):** Launch free + paid tiers (£5/month consumer, £30/month landlords)
+4. **Phase 4 (Months 3-6):** Scale - target landlord market, marketing push
+
+**Immediate Priority (Tomorrow):**
+1. Individual payment tracking (who has/hasn't paid each expense)
+2. Mark as paid + upload receipt screenshot
+3. Recurring expenses (auto-create rent/bills monthly)
+
+**Monetization Strategy:**
+- Free tier: 1 household, basic features
+- Pro tier: £5/month - unlimited households, analytics, exports
+- Landlord tier: £30/month - multi-property dashboard, payment reminders, tenant portal
+- Revenue goal: £5k MRR by Month 12

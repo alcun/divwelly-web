@@ -8,7 +8,7 @@ async function getHouseholds() {
     || cookieStore.get('better-auth.session_token')
 
   if (!sessionToken) {
-    redirect('/')
+    redirect('/login')
   }
 
   // Use the actual cookie name that was found
@@ -25,14 +25,14 @@ async function getHouseholds() {
     if (!res.ok) {
       const errorText = await res.text()
       console.error('Households fetch failed:', res.status, errorText)
-      redirect('/')
+      redirect('/login')
     }
 
     const data = await res.json()
     return data.households
   } catch (error) {
     console.error('Error fetching households:', error)
-    redirect('/')
+    redirect('/login')
   }
 }
 

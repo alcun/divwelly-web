@@ -8,7 +8,7 @@ async function getHouseholdData(householdId: string) {
     || cookieStore.get('better-auth.session_token')
 
   if (!sessionToken) {
-    redirect('/')
+    redirect('/login')
   }
 
   const cookieName = sessionToken.name

@@ -246,20 +246,36 @@
 
 ---
 
-#### 13. Mobile App (PWA)
-**Description:** Make the web app installable as a Progressive Web App.
+#### 13. Mobile App (React Native)
+**Description:** Build native iOS + Android apps for better mobile experience.
 
-**Frontend Work:**
-- Add manifest.json
-- Service worker for offline support
-- Install prompt
-- Mobile-optimized UI (already responsive)
+**Tech Stack:**
+- React Native (Expo)
+- Shared API (existing Hono backend)
+- AsyncStorage for offline
+- RevenueCat for subscriptions
+
+**Mobile-Specific Features:**
+- Camera integration (snap receipts)
+- Push notifications (rent due, payment made)
+- Face ID/Touch ID login
+- Share sheet (invite via WhatsApp)
+- Home screen widgets
+- Offline mode
 
 **Backend Work:**
-- None
+- Push notification service (Firebase)
+- App Store receipt validation
+- Deep linking setup
 
-**Complexity:** Low-Medium
-**Impact:** Medium - Better mobile experience
+**Complexity:** High (separate codebase)
+**Impact:** High - Most users are mobile-first, app store presence critical for growth
+
+**PWA Alternative (Stopgap):**
+- Add manifest.json
+- Service worker for offline
+- Install prompt
+- Much faster to implement, less native feel
 
 ---
 
@@ -284,6 +300,7 @@
 ## Recommended Next Steps (MVP Focus)
 
 **See `MVP-REQUIREMENTS.md` for detailed real-world use case**
+**See `MONETIZATION.md` for business strategy, pricing, and growth plans**
 
 ### Phase 1: Payment Tracking (Week 1) ⭐ CRITICAL
 1. Individual payment tracking per expense

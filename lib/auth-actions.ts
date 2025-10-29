@@ -49,5 +49,5 @@ export async function logout() {
   // Delete both possible cookie names
   cookieStore.delete('__Secure-better-auth.session_token')
   cookieStore.delete('better-auth.session_token')
-  redirect('/')
+  redirect('/login')
 }
