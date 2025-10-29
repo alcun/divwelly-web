@@ -4,11 +4,14 @@ import HouseholdClient from './household-client'
 
 async function getHouseholdData(householdId: string) {
   const cookieStore = await cookies()
-  const sessionToken = cookieStore.get('better-auth.session_token')
+  const sessionToken = cookieStore.get('__Secure-better-auth.session_token')
+    || cookieStore.get('better-auth.session_token')
 
   if (!sessionToken) {
     redirect('/')
   }
+
+  const cookieName = sessionToken.name
 
   try {
     // Fetch household
@@ -16,7 +19,7 @@ async function getHouseholdData(householdId: string) {
       `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}`,
       {
         headers: {
-          Cookie: `better-auth.session_token=${sessionToken.value}`,
+          Cookie: `${cookieName}=${sessionToken.value}`,
         },
         cache: 'no-store',
       }
@@ -33,7 +36,7 @@ async function getHouseholdData(householdId: string) {
       `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}/members`,
       {
         headers: {
-          Cookie: `better-auth.session_token=${sessionToken.value}`,
+          Cookie: `${cookieName}=${sessionToken.value}`,
         },
         cache: 'no-store',
       }
@@ -46,7 +49,7 @@ async function getHouseholdData(householdId: string) {
       `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}/expenses`,
       {
         headers: {
-          Cookie: `better-auth.session_token=${sessionToken.value}`,
+          Cookie: `${cookieName}=${sessionToken.value}`,
         },
         cache: 'no-store',
       }
@@ -59,7 +62,7 @@ async function getHouseholdData(householdId: string) {
       `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}/balances`,
       {
         headers: {
-          Cookie: `better-auth.session_token=${sessionToken.value}`,
+          Cookie: `${cookieName}=${sessionToken.value}`,
         },
         cache: 'no-store',
       }

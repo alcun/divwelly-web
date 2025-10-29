@@ -5,24 +5,27 @@ import { redirect } from 'next/navigation'
 
 export async function getSession() {
   const cookieStore = await cookies()
-  const sessionToken = cookieStore.get('better-auth.session_token')
-  
+  const sessionToken = cookieStore.get('__Secure-better-auth.session_token')
+    || cookieStore.get('better-auth.session_token')
+
   if (!sessionToken) {
     return null
   }
-  
+
+  const cookieName = sessionToken.name
+
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/get-session`, {
       headers: {
-        Cookie: `better-auth.session_token=${sessionToken.value}`,
+        Cookie: `${cookieName}=${sessionToken.value}`,
       },
       cache: 'no-store',
     })
-    
+
     if (!response.ok) {
       return null
     }
-    
+
     const data = await response.json()
     return data
   } catch (error) {
@@ -33,7 +36,7 @@ export async function getSession() {
 
 export async function logout() {
   const cookieStore = await cookies()
-  
+
   try {
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/sign-out`, {
       method: 'POST',
@@ -42,7 +45,9 @@ export async function logout() {
   } catch (error) {
     console.error('Logout failed:', error)
   }
-  
+
+  // Delete both possible cookie names
+  cookieStore.delete('__Secure-better-auth.session_token')
   cookieStore.delete('better-auth.session_token')
   redirect('/')
 }
