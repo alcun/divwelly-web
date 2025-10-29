@@ -29,6 +29,7 @@ type Balance = {
 
 export default function HouseholdDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const [householdId, setHouseholdId] = useState<string | null>(null)
   const [household, setHousehold] = useState<any>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
@@ -39,13 +40,26 @@ export default function HouseholdDetailPage({ params }: { params: { id: string }
   const [error, setError] = useState('')
 
   useEffect(() => {
-    loadHouseholdData()
-  }, [])
+    // Handle params properly for Next.js 15
+    const resolveParams = async () => {
+      const resolvedParams = await Promise.resolve(params)
+      setHouseholdId(resolvedParams.id)
+    }
+    resolveParams()
+  }, [params])
+
+  useEffect(() => {
+    if (householdId) {
+      loadHouseholdData()
+    }
+  }, [householdId])
 
   const loadHouseholdData = async () => {
+    if (!householdId) return
+    
     try {
       const householdRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/households/${params.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}`,
         { credentials: 'include' }
       )
       if (!householdRes.ok) throw new Error('Failed to load household')
@@ -53,7 +67,7 @@ export default function HouseholdDetailPage({ params }: { params: { id: string }
       setHousehold(householdData.household)
 
       const membersRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/households/${params.id}/members`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}/members`,
         { credentials: 'include' }
       )
       if (membersRes.ok) {
@@ -62,7 +76,7 @@ export default function HouseholdDetailPage({ params }: { params: { id: string }
       }
 
       const expensesRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/households/${params.id}/expenses`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}/expenses`,
         { credentials: 'include' }
       )
       if (expensesRes.ok) {
@@ -71,7 +85,7 @@ export default function HouseholdDetailPage({ params }: { params: { id: string }
       }
 
       const balancesRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/households/${params.id}/balances`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}/balances`,
         { credentials: 'include' }
       )
       if (balancesRes.ok) {
@@ -93,6 +107,8 @@ export default function HouseholdDetailPage({ params }: { params: { id: string }
       amount: '',
     },
     onSubmit: async ({ value }) => {
+      if (!householdId) return
+      
       setError('')
       try {
         const res = await fetch(
@@ -102,7 +118,7 @@ export default function HouseholdDetailPage({ params }: { params: { id: string }
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              householdId: params.id,
+              householdId: householdId,
               description: value.description,
               amount: parseFloat(value.amount),
             }),
