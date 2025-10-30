@@ -224,6 +224,30 @@ export default function HouseholdClient({
     }
   }
 
+  const generateRecurringExpenses = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/recurring-expenses/generate`,
+        {
+          method: 'POST',
+          credentials: 'include',
+        }
+      )
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to generate expenses')
+      }
+
+      const data = await res.json()
+      alert(`Success! Generated ${data.generated} expense(s) from recurring bills.`)
+      await loadRecurringExpenses()
+      await loadHouseholdData()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
   const expenseForm = useForm({
     defaultValues: {
       description: '',
@@ -818,31 +842,47 @@ export default function HouseholdClient({
             {recurringExpenses.length === 0 ? (
               <p className="text-muted mb-md">No recurring bills yet. Add one to auto-generate expenses monthly!</p>
             ) : (
-              <div className="mb-md">
-                {recurringExpenses.map((recurring) => (
-                  <div key={recurring.id} className="list-item flex-between" style={{ cursor: 'default' }}>
-                    <div>
-                      <p className="text-bold mb-sm">{recurring.description}</p>
-                      <p className="text-sm text-muted">
-                        £{(recurring.amount / 100).toFixed(2)} • {recurring.frequency}
-                        {recurring.dayOfMonth && ` • Day ${recurring.dayOfMonth} of month`}
-                      </p>
-                      {recurring.lastGenerated && (
+              <>
+                <div className="mb-md">
+                  {recurringExpenses.map((recurring) => (
+                    <div key={recurring.id} className="list-item flex-between" style={{ cursor: 'default' }}>
+                      <div>
+                        <p className="text-bold mb-sm">{recurring.description}</p>
                         <p className="text-sm text-muted">
-                          Last generated: {new Date(recurring.lastGenerated).toLocaleDateString()}
+                          £{(recurring.amount / 100).toFixed(2)} • {recurring.frequency}
+                          {recurring.dayOfMonth && ` • Day ${recurring.dayOfMonth} of month`}
                         </p>
-                      )}
+                        {recurring.lastGenerated && (
+                          <p className="text-sm text-muted">
+                            Last generated: {new Date(recurring.lastGenerated).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => deleteRecurringExpense(recurring.id)}
+                        className="btn btn-secondary"
+                        style={{ padding: '4px 12px', fontSize: '10px' }}
+                      >
+                        Delete
+                      </button>
                     </div>
-                    <button
-                      onClick={() => deleteRecurringExpense(recurring.id)}
-                      className="btn btn-secondary"
-                      style={{ padding: '4px 12px', fontSize: '10px' }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+
+                <div className="mb-md" style={{ padding: '16px', background: '#f9f9f9', border: '2px solid #000' }}>
+                  <p className="text-sm text-bold text-upper mb-sm">Generate Bills for {new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</p>
+                  <p className="text-sm text-muted mb-md">
+                    Click below to create expenses from your recurring bills. This will split each bill among all active members.
+                  </p>
+                  <button
+                    onClick={generateRecurringExpenses}
+                    className="btn btn-primary"
+                    style={{ width: '100%' }}
+                  >
+                    Generate This Month's Bills
+                  </button>
+                </div>
+              </>
             )}
 
             <div className="grid grid-2 gap-md mt-md">
