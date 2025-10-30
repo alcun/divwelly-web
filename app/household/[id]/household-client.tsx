@@ -94,6 +94,7 @@ export default function HouseholdClient({
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([])
   const [showAddRecurring, setShowAddRecurring] = useState(false)
   const [showRecurringList, setShowRecurringList] = useState(false)
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
 
   const loadHouseholdData = async () => {
     try {
@@ -186,6 +187,62 @@ export default function HouseholdClient({
     }
   }
 
+  const deleteExpense = async (expenseId: string) => {
+    if (!confirm('Delete this expense? This will remove all payment records.')) return
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/expenses/${expenseId}`,
+        {
+          method: 'DELETE',
+          credentials: 'include',
+        }
+      )
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to delete expense')
+      }
+
+      // Reload data
+      setExpandedExpense(null)
+      await loadHouseholdData()
+      alert('Expense deleted successfully')
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+  const updateExpense = async (expenseId: string, description: string, amount: string, dueDate: string) => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/expenses/${expenseId}`,
+        {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            description,
+            amount: parseFloat(amount),
+            dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+          }),
+        }
+      )
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to update expense')
+      }
+
+      // Reload data
+      setEditingExpense(null)
+      await loadHouseholdData()
+      alert('Expense updated successfully')
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
   const loadRecurringExpenses = async () => {
     try {
       const res = await fetch(
@@ -235,8 +292,15 @@ export default function HouseholdClient({
       )
 
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to generate expenses')
+        const contentType = res.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const data = await res.json()
+          throw new Error(data.error || data.details || 'Failed to generate expenses')
+        } else {
+          const text = await res.text()
+          console.error('Non-JSON response:', text)
+          throw new Error(`Failed to generate expenses (${res.status})`)
+        }
       }
 
       const data = await res.json()
@@ -244,6 +308,7 @@ export default function HouseholdClient({
       await loadRecurringExpenses()
       await loadHouseholdData()
     } catch (err: any) {
+      console.error('Generate error:', err)
       alert(err.message)
     }
   }
@@ -580,9 +645,55 @@ export default function HouseholdClient({
                               </div>
                             ))}
                           </div>
+                          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #ddd', display: 'flex', gap: '8px' }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingExpense(expense)
+                              }}
+                              className="btn btn-secondary"
+                              style={{ padding: '4px 12px', fontSize: '10px' }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                deleteExpense(expense.id)
+                              }}
+                              className="btn btn-secondary"
+                              style={{ padding: '4px 12px', fontSize: '10px', background: '#dc3545', color: 'white' }}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
                       ) : (
-                        <p className="text-sm text-muted">No payment records found</p>
+                        <div>
+                          <p className="text-sm text-muted mb-sm">No payment records found</p>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingExpense(expense)
+                              }}
+                              className="btn btn-secondary"
+                              style={{ padding: '4px 12px', fontSize: '10px' }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                deleteExpense(expense.id)
+                              }}
+                              className="btn btn-secondary"
+                              style={{ padding: '4px 12px', fontSize: '10px', background: '#dc3545', color: 'white' }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
                   )}
@@ -1033,6 +1144,89 @@ export default function HouseholdClient({
                   onClick={() => {
                     setShowAddRecurring(false)
                     recurringForm.reset()
+                    setError('')
+                  }}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Expense Modal */}
+      {editingExpense && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2 className="modal-title">Edit Expense</h2>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                const formData = new FormData(e.currentTarget)
+                updateExpense(
+                  editingExpense.id,
+                  formData.get('description') as string,
+                  formData.get('amount') as string,
+                  formData.get('dueDate') as string
+                )
+              }}
+            >
+              <div className="form-group">
+                <label htmlFor="edit-description" className="form-label">
+                  Description
+                </label>
+                <input
+                  id="edit-description"
+                  name="description"
+                  type="text"
+                  required
+                  defaultValue={editingExpense.description}
+                  className="form-input"
+                  placeholder="e.g. Groceries, Rent, Electricity"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="edit-amount" className="form-label">
+                  Amount (£)
+                </label>
+                <input
+                  id="edit-amount"
+                  name="amount"
+                  type="number"
+                  step="0.01"
+                  required
+                  defaultValue={(parseFloat(editingExpense.amount) / 100).toFixed(2)}
+                  className="form-input"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="edit-dueDate" className="form-label">
+                  Due Date (Optional)
+                </label>
+                <input
+                  id="edit-dueDate"
+                  name="dueDate"
+                  type="date"
+                  defaultValue={editingExpense.dueDate ? new Date(editingExpense.dueDate).toISOString().split('T')[0] : ''}
+                  className="form-input"
+                />
+              </div>
+
+              {error && <div className="error">{error}</div>}
+
+              <div className="grid grid-2 gap-md mt-md">
+                <button type="submit" className="btn btn-primary">
+                  Save Changes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingExpense(null)
                     setError('')
                   }}
                   className="btn btn-secondary"
