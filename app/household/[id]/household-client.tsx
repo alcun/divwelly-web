@@ -73,6 +73,8 @@ type HouseholdClientProps = {
   initialMembers: Member[]
   initialExpenses: Expense[]
   initialBalances: Balance[]
+  currentUserId?: string
+  currentUserRole?: string
 }
 
 export default function HouseholdClient({
@@ -80,6 +82,8 @@ export default function HouseholdClient({
   initialMembers,
   initialExpenses,
   initialBalances,
+  currentUserId,
+  currentUserRole = 'member',
 }: HouseholdClientProps) {
   const router = useRouter()
   const [members, setMembers] = useState<Member[]>(initialMembers)
@@ -511,9 +515,11 @@ export default function HouseholdClient({
         <div className="card-header">
           <div className="flex-between">
             <h2>Household Info</h2>
-            <button onClick={() => setShowEditInfo(true)} className="btn btn-secondary">
-              Edit Info
-            </button>
+            {currentUserRole === 'admin' && (
+              <button onClick={() => setShowEditInfo(true)} className="btn btn-secondary">
+                Edit Info
+              </button>
+            )}
           </div>
         </div>
 
@@ -621,7 +627,7 @@ export default function HouseholdClient({
               </div>
               <div className="flex gap-sm">
                 <span className="badge">{member.role}</span>
-                {member.role === 'member' && (
+                {currentUserRole === 'admin' && member.role === 'member' && (
                   <button
                     onClick={async () => {
                       if (!confirm(`Promote ${member.name} to admin?`)) return
@@ -682,7 +688,7 @@ export default function HouseholdClient({
                     <div>
                       <p className="text-bold mb-sm">{expense.description}</p>
                       <p className="text-sm text-muted">
-                        Paid by {expense.paidByName} • {new Date(expense.createdAt).toLocaleDateString()}
+                        Created by {expense.paidByName} • {new Date(expense.createdAt).toLocaleDateString()}
                         {expense.dueDate && ` • Due ${new Date(expense.dueDate).toLocaleDateString()}`}
                       </p>
                     </div>
@@ -711,7 +717,7 @@ export default function HouseholdClient({
                                     <p className="text-sm text-muted">Paid on {new Date(payment.paidAt).toLocaleDateString()}</p>
                                   )}
                                 </div>
-                                {!payment.isPaid && (
+                                {!payment.isPaid && payment.user.id === currentUserId && (
                                   <button
                                     onClick={() => markAsPaid(expense.id, payment.id)}
                                     disabled={paymentLoadingStates[payment.id]}
@@ -720,6 +726,9 @@ export default function HouseholdClient({
                                   >
                                     {paymentLoadingStates[payment.id] ? 'Marking...' : 'Mark as Paid'}
                                   </button>
+                                )}
+                                {!payment.isPaid && payment.user.id !== currentUserId && (
+                                  <span className="badge" style={{ background: '#ccc' }}>UNPAID</span>
                                 )}
                                 {payment.isPaid && (
                                   <span className="badge" style={{ background: 'var(--accent)' }}>PAID</span>
@@ -917,6 +926,7 @@ export default function HouseholdClient({
                   }
 
                   setShowEditInfo(false)
+                  setError('')
                   toast.success('Household info updated')
                   router.refresh() // Keep this one as it's for household meta info
                 } catch (err: any) {

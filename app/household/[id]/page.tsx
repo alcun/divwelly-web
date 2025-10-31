@@ -15,7 +15,7 @@ async function getHouseholdData(householdId: string) {
 
   try {
     // Fetch all data in parallel for 4x faster loading
-    const [householdRes, membersRes, expensesRes, balancesRes] = await Promise.all([
+    const [householdRes, membersRes, expensesRes, balancesRes, sessionRes] = await Promise.all([
       fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}`,
         {
@@ -52,24 +52,39 @@ async function getHouseholdData(householdId: string) {
           cache: 'no-store',
         }
       ),
+      fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/get-session`,
+        {
+          headers: {
+            Cookie: `${cookieName}=${sessionToken.value}`,
+          },
+          cache: 'no-store',
+        }
+      ),
     ])
 
     if (!householdRes.ok) {
       redirect('/dashboard')
     }
 
-    const [householdData, membersData, expensesData, balancesData] = await Promise.all([
+    const [householdData, membersData, expensesData, balancesData, sessionData] = await Promise.all([
       householdRes.json(),
       membersRes.ok ? membersRes.json() : { members: [] },
       expensesRes.ok ? expensesRes.json() : { expenses: [] },
       balancesRes.ok ? balancesRes.json() : { balances: [] },
+      sessionRes.ok ? sessionRes.json() : { user: null },
     ])
+
+    // Find current user's role in this household
+    const currentMember = membersData.members?.find((m: any) => m.id === sessionData.user?.id)
 
     return {
       household: householdData.household,
       members: membersData.members || [],
       expenses: expensesData.expenses || [],
       balances: balancesData.balances || [],
+      currentUser: sessionData.user,
+      currentUserRole: currentMember?.role || 'member',
     }
   } catch (error) {
     console.error('Error fetching household data:', error)
@@ -83,7 +98,7 @@ export default async function HouseholdDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const { household, members, expenses, balances } = await getHouseholdData(id)
+  const { household, members, expenses, balances, currentUser, currentUserRole } = await getHouseholdData(id)
 
   return (
     <HouseholdClient
@@ -91,6 +106,8 @@ export default async function HouseholdDetailPage({
       initialMembers={members}
       initialExpenses={expenses}
       initialBalances={balances}
+      currentUserId={currentUser?.id}
+      currentUserRole={currentUserRole}
     />
   )
 }
