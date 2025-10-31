@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from '@tanstack/react-form'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 type Member = {
   id: string
@@ -81,7 +82,7 @@ export default function HouseholdClient({
   initialBalances,
 }: HouseholdClientProps) {
   const router = useRouter()
-  const [members] = useState<Member[]>(initialMembers)
+  const [members, setMembers] = useState<Member[]>(initialMembers)
   const [expenses, setExpenses] = useState<Expense[]>(initialExpenses)
   const [balances, setBalances] = useState<Balance[]>(initialBalances)
   const [showAddExpense, setShowAddExpense] = useState(false)
@@ -95,6 +96,9 @@ export default function HouseholdClient({
   const [showAddRecurring, setShowAddRecurring] = useState(false)
   const [showRecurringList, setShowRecurringList] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loadingHouseholdData, setLoadingHouseholdData] = useState(false)
+  const [paymentLoadingStates, setPaymentLoadingStates] = useState<Record<string, boolean>>({})
 
   const loadHouseholdData = async () => {
     try {
@@ -162,6 +166,18 @@ export default function HouseholdClient({
   }
 
   const markAsPaid = async (expenseId: string, paymentId: string) => {
+    // Set loading state
+    setPaymentLoadingStates(prev => ({ ...prev, [paymentId]: true }))
+
+    // Optimistic update
+    const previousPayments = expensePayments[expenseId]
+    setExpensePayments(prev => ({
+      ...prev,
+      [expenseId]: prev[expenseId].map(p =>
+        p.id === paymentId ? { ...p, isPaid: true, paidAt: new Date().toISOString() } : p
+      )
+    }))
+
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/expenses/${expenseId}/payments/${paymentId}/mark-paid`,
@@ -178,17 +194,37 @@ export default function HouseholdClient({
         throw new Error(data.error || 'Failed to mark as paid')
       }
 
-      // Reload payments for this expense
-      delete expensePayments[expenseId]
-      await loadPayments(expenseId)
-      await loadHouseholdData()
+      // Reload balances in background
+      const balancesRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/households/${initialHousehold.id}/balances`,
+        { credentials: 'include' }
+      )
+      if (balancesRes.ok) {
+        const balancesData = await balancesRes.json()
+        setBalances(balancesData.balances || [])
+      }
+
+      toast.success('Payment marked as paid')
     } catch (err: any) {
-      alert(err.message)
+      // Rollback on error
+      setExpensePayments(prev => ({
+        ...prev,
+        [expenseId]: previousPayments
+      }))
+      toast.error(err.message || 'Failed to mark as paid')
+    } finally {
+      setPaymentLoadingStates(prev => ({ ...prev, [paymentId]: false }))
     }
   }
 
   const deleteExpense = async (expenseId: string) => {
     if (!confirm('Delete this expense? This will remove all payment records.')) return
+
+    setIsSubmitting(true)
+    // Optimistic update
+    const previousExpenses = expenses
+    setExpenses(expenses.filter(e => e.id !== expenseId))
+    setExpandedExpense(null)
 
     try {
       const res = await fetch(
@@ -204,16 +240,37 @@ export default function HouseholdClient({
         throw new Error(data.error || 'Failed to delete expense')
       }
 
-      // Reload data
-      setExpandedExpense(null)
-      await loadHouseholdData()
-      alert('Expense deleted successfully')
+      // Reload balances in background
+      const balancesRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/households/${initialHousehold.id}/balances`,
+        { credentials: 'include' }
+      )
+      if (balancesRes.ok) {
+        const balancesData = await balancesRes.json()
+        setBalances(balancesData.balances || [])
+      }
+
+      toast.success('Expense deleted successfully')
     } catch (err: any) {
-      alert(err.message)
+      // Rollback
+      setExpenses(previousExpenses)
+      toast.error(err.message || 'Failed to delete expense')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const updateExpense = async (expenseId: string, description: string, amount: string, dueDate: string) => {
+    setIsSubmitting(true)
+    // Optimistic update
+    const previousExpenses = expenses
+    setExpenses(expenses.map(e =>
+      e.id === expenseId
+        ? { ...e, description, amount: (parseFloat(amount) * 100).toString(), dueDate: dueDate || null }
+        : e
+    ))
+    setEditingExpense(null)
+
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/expenses/${expenseId}`,
@@ -234,12 +291,14 @@ export default function HouseholdClient({
         throw new Error(data.error || 'Failed to update expense')
       }
 
-      // Reload data
-      setEditingExpense(null)
-      await loadHouseholdData()
-      alert('Expense updated successfully')
+      toast.success('Expense updated successfully')
     } catch (err: any) {
-      alert(err.message)
+      // Rollback
+      setExpenses(previousExpenses)
+      setEditingExpense(editingExpense)
+      toast.error(err.message || 'Failed to update expense')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -261,6 +320,10 @@ export default function HouseholdClient({
   const deleteRecurringExpense = async (id: string) => {
     if (!confirm('Delete this recurring expense?')) return
 
+    setIsSubmitting(true)
+    const previousRecurring = recurringExpenses
+    setRecurringExpenses(recurringExpenses.filter(r => r.id !== id))
+
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/recurring-expenses/${id}`,
@@ -275,13 +338,19 @@ export default function HouseholdClient({
         throw new Error(data.error || 'Failed to delete')
       }
 
-      await loadRecurringExpenses()
+      toast.success('Recurring bill deleted')
     } catch (err: any) {
-      alert(err.message)
+      setRecurringExpenses(previousRecurring)
+      toast.error(err.message || 'Failed to delete recurring bill')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const generateRecurringExpenses = async () => {
+    setIsSubmitting(true)
+    toast.loading('Generating bills...', { id: 'generate-bills' })
+
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/recurring-expenses/generate`,
@@ -304,12 +373,18 @@ export default function HouseholdClient({
       }
 
       const data = await res.json()
-      alert(`Success! Generated ${data.generated} expense(s) from recurring bills.`)
-      await loadRecurringExpenses()
-      await loadHouseholdData()
+      toast.success(`Generated ${data.generated} expense(s) from recurring bills!`, { id: 'generate-bills' })
+
+      // Reload data in background
+      await Promise.all([
+        loadRecurringExpenses(),
+        loadHouseholdData()
+      ])
     } catch (err: any) {
       console.error('Generate error:', err)
-      alert(err.message)
+      toast.error(err.message || 'Failed to generate expenses', { id: 'generate-bills' })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -551,6 +626,11 @@ export default function HouseholdClient({
                     onClick={async () => {
                       if (!confirm(`Promote ${member.name} to admin?`)) return
 
+                      const previousMembers = members
+                      setMembers(members.map(m =>
+                        m.id === member.id ? { ...m, role: 'admin' } : m
+                      ))
+
                       try {
                         const res = await fetch(
                           `${process.env.NEXT_PUBLIC_API_URL}/api/households/${initialHousehold.id}/members/${member.id}/promote`,
@@ -565,9 +645,10 @@ export default function HouseholdClient({
                           throw new Error(data.error || 'Failed to promote member')
                         }
 
-                        router.refresh()
+                        toast.success(`${member.name} promoted to admin`)
                       } catch (err: any) {
-                        alert(err.message)
+                        setMembers(previousMembers)
+                        toast.error(err.message || 'Failed to promote member')
                       }
                     }}
                     className="btn btn-primary"
@@ -633,10 +714,11 @@ export default function HouseholdClient({
                                 {!payment.isPaid && (
                                   <button
                                     onClick={() => markAsPaid(expense.id, payment.id)}
+                                    disabled={paymentLoadingStates[payment.id]}
                                     className="btn btn-primary"
                                     style={{ padding: '4px 12px', fontSize: '10px' }}
                                   >
-                                    Mark as Paid
+                                    {paymentLoadingStates[payment.id] ? 'Marking...' : 'Mark as Paid'}
                                   </button>
                                 )}
                                 {payment.isPaid && (
@@ -777,12 +859,14 @@ export default function HouseholdClient({
               <div className="grid grid-2 gap-md mt-md">
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="btn btn-primary"
                 >
-                  Add Expense
+                  {isSubmitting ? 'Adding...' : 'Add Expense'}
                 </button>
                 <button
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => {
                     setShowAddExpense(false)
                     expenseForm.reset()
@@ -807,6 +891,7 @@ export default function HouseholdClient({
               onSubmit={async (e) => {
                 e.preventDefault()
                 const formData = new FormData(e.currentTarget)
+                setIsSubmitting(true)
 
                 try {
                   const res = await fetch(
@@ -832,9 +917,13 @@ export default function HouseholdClient({
                   }
 
                   setShowEditInfo(false)
-                  router.refresh()
+                  toast.success('Household info updated')
+                  router.refresh() // Keep this one as it's for household meta info
                 } catch (err: any) {
                   setError(err.message)
+                  toast.error(err.message || 'Failed to update household info')
+                } finally {
+                  setIsSubmitting(false)
                 }
               }}
             >
@@ -868,7 +957,7 @@ export default function HouseholdClient({
                   id="wifiName"
                   name="wifiName"
                   type="text"
-                  defaultValue={initialHousehold.wifiPassword || ''}
+                  defaultValue={initialHousehold.wifiName || ''}
                   className="form-input"
                   placeholder="MyWiFi"
                 />

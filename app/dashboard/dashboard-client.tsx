@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from '@tanstack/react-form'
 import Link from 'next/link'
 import { logout } from '@/lib/auth-actions'
+import { toast } from 'sonner'
 
 type Household = {
   household: {
@@ -26,14 +27,11 @@ type Props = {
 export default function DashboardClient({ initialHouseholds }: Props) {
   const router = useRouter()
   const [households, setHouseholds] = useState<Household[]>(initialHouseholds)
-  
+
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [error, setError] = useState('')
-
-  const refreshHouseholds = () => {
-    router.refresh()
-  }
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleLogout = async () => {
     await logout()
@@ -45,6 +43,7 @@ export default function DashboardClient({ initialHouseholds }: Props) {
     },
     onSubmit: async ({ value }) => {
       setError('')
+      setIsSubmitting(true)
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/households`, {
           method: 'POST',
@@ -58,11 +57,21 @@ export default function DashboardClient({ initialHouseholds }: Props) {
           throw new Error(data.error || 'Failed to create household')
         }
 
+        const data = await res.json()
+        // Optimistic update
+        setHouseholds(prev => [...prev, {
+          household: data.household,
+          member: { role: 'admin', joinedAt: new Date().toISOString() }
+        }])
+
         setShowCreateModal(false)
         createForm.reset()
-        refreshHouseholds()
+        toast.success('Household created successfully')
       } catch (err: any) {
         setError(err.message)
+        toast.error(err.message || 'Failed to create household')
+      } finally {
+        setIsSubmitting(false)
       }
     },
   })
@@ -73,6 +82,7 @@ export default function DashboardClient({ initialHouseholds }: Props) {
     },
     onSubmit: async ({ value }) => {
       setError('')
+      setIsSubmitting(true)
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/households/join`, {
           method: 'POST',
@@ -86,11 +96,21 @@ export default function DashboardClient({ initialHouseholds }: Props) {
           throw new Error(data.error || 'Failed to join household')
         }
 
+        const data = await res.json()
+        // Optimistic update
+        setHouseholds(prev => [...prev, {
+          household: data.household,
+          member: { role: 'member', joinedAt: new Date().toISOString() }
+        }])
+
         setShowJoinModal(false)
         joinForm.reset()
-        refreshHouseholds()
+        toast.success(`Joined ${data.household.name}`)
       } catch (err: any) {
         setError(err.message)
+        toast.error(err.message || 'Failed to join household')
+      } finally {
+        setIsSubmitting(false)
       }
     },
   })
@@ -187,12 +207,14 @@ export default function DashboardClient({ initialHouseholds }: Props) {
               <div className="grid grid-2 gap-md mt-md">
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="btn btn-primary"
                 >
-                  Create
+                  {isSubmitting ? 'Creating...' : 'Create'}
                 </button>
                 <button
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => {
                     setShowCreateModal(false)
                     createForm.reset()
@@ -247,12 +269,14 @@ export default function DashboardClient({ initialHouseholds }: Props) {
               <div className="grid grid-2 gap-md mt-md">
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="btn btn-primary"
                 >
-                  Join
+                  {isSubmitting ? 'Joining...' : 'Join'}
                 </button>
                 <button
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => {
                     setShowJoinModal(false)
                     joinForm.reset()

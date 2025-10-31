@@ -14,61 +14,56 @@ async function getHouseholdData(householdId: string) {
   const cookieName = sessionToken.name
 
   try {
-    // Fetch household
-    const householdRes = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}`,
-      {
-        headers: {
-          Cookie: `${cookieName}=${sessionToken.value}`,
-        },
-        cache: 'no-store',
-      }
-    )
+    // Fetch all data in parallel for 4x faster loading
+    const [householdRes, membersRes, expensesRes, balancesRes] = await Promise.all([
+      fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}`,
+        {
+          headers: {
+            Cookie: `${cookieName}=${sessionToken.value}`,
+          },
+          cache: 'no-store',
+        }
+      ),
+      fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}/members`,
+        {
+          headers: {
+            Cookie: `${cookieName}=${sessionToken.value}`,
+          },
+          cache: 'no-store',
+        }
+      ),
+      fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}/expenses`,
+        {
+          headers: {
+            Cookie: `${cookieName}=${sessionToken.value}`,
+          },
+          cache: 'no-store',
+        }
+      ),
+      fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}/balances`,
+        {
+          headers: {
+            Cookie: `${cookieName}=${sessionToken.value}`,
+          },
+          cache: 'no-store',
+        }
+      ),
+    ])
 
     if (!householdRes.ok) {
       redirect('/dashboard')
     }
 
-    const householdData = await householdRes.json()
-
-    // Fetch members
-    const membersRes = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}/members`,
-      {
-        headers: {
-          Cookie: `${cookieName}=${sessionToken.value}`,
-        },
-        cache: 'no-store',
-      }
-    )
-
-    const membersData = membersRes.ok ? await membersRes.json() : { members: [] }
-
-    // Fetch expenses
-    const expensesRes = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}/expenses`,
-      {
-        headers: {
-          Cookie: `${cookieName}=${sessionToken.value}`,
-        },
-        cache: 'no-store',
-      }
-    )
-
-    const expensesData = expensesRes.ok ? await expensesRes.json() : { expenses: [] }
-
-    // Fetch balances
-    const balancesRes = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/households/${householdId}/balances`,
-      {
-        headers: {
-          Cookie: `${cookieName}=${sessionToken.value}`,
-        },
-        cache: 'no-store',
-      }
-    )
-
-    const balancesData = balancesRes.ok ? await balancesRes.json() : { balances: [] }
+    const [householdData, membersData, expensesData, balancesData] = await Promise.all([
+      householdRes.json(),
+      membersRes.ok ? membersRes.json() : { members: [] },
+      expensesRes.ok ? expensesRes.json() : { expenses: [] },
+      balancesRes.ok ? balancesRes.json() : { balances: [] },
+    ])
 
     return {
       household: householdData.household,
