@@ -51,6 +51,7 @@ type RecurringExpense = {
   endDate: string | null
   dayOfMonth: number | null
   dayOfWeek: number | null
+  notes: string | null
   isActive: boolean
   lastGenerated: string | null
 }
@@ -401,6 +402,7 @@ export default function HouseholdClient({
       frequency: 'monthly' as 'monthly' | 'weekly' | 'yearly',
       dayOfMonth: '',
       startDate: '',
+      notes: '',
     },
     onSubmit: async ({ value }) => {
       setError('')
@@ -418,6 +420,7 @@ export default function HouseholdClient({
               frequency: value.frequency,
               startDate: new Date(value.startDate).toISOString(),
               dayOfMonth: value.frequency === 'monthly' ? parseInt(value.dayOfMonth) : undefined,
+              notes: value.notes || undefined,
             }),
           }
         )
@@ -517,7 +520,7 @@ export default function HouseholdClient({
                   </div>
 
                   <div style={{ padding: '16px', background: '#f9f9f9', border: '2px solid #000' }}>
-                    <div className="flex-between">
+                    <div className="flex-between mb-sm">
                       <div>
                         <p className="text-sm text-muted">Total Bill</p>
                         <p className="text-bold" style={{ fontSize: '16px' }}>£{(recurring.amount / 100).toFixed(2)}</p>
@@ -527,6 +530,12 @@ export default function HouseholdClient({
                         <p className="text-bold" style={{ fontSize: '20px', color: 'var(--accent)' }}>£{(yourShare / 100).toFixed(2)}</p>
                       </div>
                     </div>
+                    {recurring.notes && (
+                      <div style={{ paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                        <p className="text-sm text-bold text-upper mb-sm">Payment Info</p>
+                        <p className="text-sm" style={{ whiteSpace: 'pre-wrap' }}>{recurring.notes}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )
@@ -1266,6 +1275,27 @@ export default function HouseholdClient({
                       onChange={(e) => field.handleChange(e.target.value)}
                       className="form-input"
                     />
+                  </div>
+                )}
+              </recurringForm.Field>
+
+              <recurringForm.Field name="notes">
+                {(field) => (
+                  <div className="form-group">
+                    <label htmlFor="recurring-notes" className="form-label">
+                      Notes (Optional)
+                    </label>
+                    <textarea
+                      id="recurring-notes"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      className="form-input"
+                      placeholder="e.g. 'Pay to John's account', 'Reference: Rent', 'Due: 6th of month'"
+                      rows={3}
+                    />
+                    <p className="text-sm text-muted" style={{ marginTop: '4px' }}>
+                      Add payment instructions, account details, or reference info
+                    </p>
                   </div>
                 )}
               </recurringForm.Field>
