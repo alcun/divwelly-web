@@ -56,6 +56,17 @@ type RecurringExpense = {
   lastGenerated: string | null
 }
 
+type RecurringBillPayment = {
+  id: string
+  month: string
+  paidAt: string | null
+  user: {
+    id: string
+    name: string
+    email: string
+  }
+}
+
 type Household = {
   id: string
   name: string
@@ -103,6 +114,8 @@ export default function HouseholdClient({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loadingHouseholdData, setLoadingHouseholdData] = useState(false)
   const [paymentLoadingStates, setPaymentLoadingStates] = useState<Record<string, boolean>>({})
+  const [recurringBillPayments, setRecurringBillPayments] = useState<Record<string, RecurringBillPayment[]>>({})
+  const [expandedRecurringBill, setExpandedRecurringBill] = useState<string | null>(null)
 
   // Load recurring expenses on mount
   useEffect(() => {
@@ -326,6 +339,63 @@ export default function HouseholdClient({
     }
   }
 
+  const loadRecurringBillPayments = async (recurringExpenseId: string) => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/recurring-expenses/${recurringExpenseId}/payments`,
+        { credentials: 'include' }
+      )
+      if (res.ok) {
+        const data = await res.json()
+        setRecurringBillPayments(prev => ({
+          ...prev,
+          [recurringExpenseId]: data.payments?.map((p: any) => ({
+            id: p.payment.id,
+            month: p.payment.month,
+            paidAt: p.payment.paidAt,
+            user: p.user,
+          })) || []
+        }))
+      }
+    } catch (err) {
+      console.error('Error loading recurring bill payments:', err)
+    }
+  }
+
+  const markRecurringBillPaid = async (recurringExpenseId: string, userId?: string) => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/recurring-expenses/${recurringExpenseId}/mark-paid`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId }),
+        }
+      )
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to mark as paid')
+      }
+
+      // Reload payments
+      await loadRecurringBillPayments(recurringExpenseId)
+      toast.success('Marked as paid')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to mark as paid')
+    }
+  }
+
+  const toggleRecurringBillExpanded = async (recurringExpenseId: string) => {
+    if (expandedRecurringBill === recurringExpenseId) {
+      setExpandedRecurringBill(null)
+    } else {
+      setExpandedRecurringBill(recurringExpenseId)
+      await loadRecurringBillPayments(recurringExpenseId)
+    }
+  }
+
   const deleteRecurringExpense = async (id: string) => {
     if (!confirm('Delete this recurring expense?')) return
 
@@ -463,7 +533,7 @@ export default function HouseholdClient({
       <div className="card">
         <div className="flex-between mb-lg">
           <div>
-            <h1 className="mb-sm">{initialHousehold.name}</h1>
+            <h1 className="mb-sm">🏡 {initialHousehold.name}</h1>
             <p className="text-sm text-muted">Invite Code: {initialHousehold.inviteCode}</p>
           </div>
           <div className="flex gap-sm">
@@ -496,9 +566,22 @@ export default function HouseholdClient({
           <div>
             {recurringExpenses.map((recurring) => {
               const yourShare = recurring.amount / members.length
+              const isExpanded = expandedRecurringBill === recurring.id
+              const payments = recurringBillPayments[recurring.id] || []
+
+              // Get current month (YYYY-MM-01)
+              const now = new Date()
+              const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+
+              // Filter current month payments
+              const currentMonthPayments = payments.filter(p => {
+                const paymentMonth = new Date(p.month)
+                return paymentMonth.getFullYear() === now.getFullYear() &&
+                       paymentMonth.getMonth() === now.getMonth()
+              })
 
               return (
-                <div key={recurring.id} className="list-item" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                <div key={recurring.id} className="list-item" style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer' }} onClick={() => toggleRecurringBillExpanded(recurring.id)}>
                   <div className="flex-between mb-sm">
                     <div>
                       <p className="text-bold" style={{ fontSize: '18px' }}>{recurring.description}</p>
@@ -507,15 +590,21 @@ export default function HouseholdClient({
                         {recurring.dayOfMonth && ` • Due ${recurring.dayOfMonth}${getDaySuffix(recurring.dayOfMonth)} of each month`}
                       </p>
                     </div>
-                    {currentUserRole === 'admin' && (
-                      <button
-                        onClick={() => deleteRecurringExpense(recurring.id)}
-                        className="btn btn-secondary"
-                        style={{ padding: '4px 12px', fontSize: '10px' }}
-                      >
-                        Delete
-                      </button>
-                    )}
+                    <div className="flex gap-sm" style={{ alignItems: 'center' }}>
+                      {currentUserRole === 'admin' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deleteRecurringExpense(recurring.id)
+                          }}
+                          className="btn btn-secondary"
+                          style={{ padding: '4px 12px', fontSize: '10px' }}
+                        >
+                          Delete
+                        </button>
+                      )}
+                      <span style={{ fontSize: '12px' }}>{isExpanded ? '▼' : '▶'}</span>
+                    </div>
                   </div>
 
                   <div style={{ padding: '16px', background: '#f9f9f9', border: '2px solid #000' }}>
@@ -529,10 +618,67 @@ export default function HouseholdClient({
                         <p className="text-bold" style={{ fontSize: '20px', color: 'var(--accent)' }}>£{(yourShare / 100).toFixed(2)}</p>
                       </div>
                     </div>
+
                     {recurring.notes && (
-                      <div style={{ paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                      <div style={{ paddingTop: '12px', borderTop: '1px solid #ddd', marginBottom: '12px' }}>
                         <p className="text-sm text-bold text-upper mb-sm">Payment Info</p>
                         <p className="text-sm" style={{ whiteSpace: 'pre-wrap' }}>{recurring.notes}</p>
+                      </div>
+                    )}
+
+                    {isExpanded && (
+                      <div style={{ paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                        <p className="text-sm text-bold text-upper mb-sm">
+                          {new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+                        </p>
+                        <div style={{ display: 'grid', gap: '8px' }}>
+                          {members.map(member => {
+                            const payment = currentMonthPayments.find(p => p.user.id === member.id)
+                            const isPaid = payment?.paidAt
+                            const isCurrentUser = member.id === currentUserId
+
+                            return (
+                              <div key={member.id} className="flex-between" style={{ padding: '8px', background: '#fff', border: '1px solid #ddd' }}>
+                                <div>
+                                  <p className="text-sm text-bold">{member.name}</p>
+                                  <p className="text-sm text-muted">£{(yourShare / 100).toFixed(2)}</p>
+                                  {isPaid && payment?.paidAt && (
+                                    <p className="text-sm text-muted">Paid {new Date(payment.paidAt).toLocaleDateString()}</p>
+                                  )}
+                                </div>
+                                <div>
+                                  {isPaid ? (
+                                    <span className="badge" style={{ background: 'var(--accent)' }}>✓ PAID</span>
+                                  ) : isCurrentUser ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        markRecurringBillPaid(recurring.id)
+                                      }}
+                                      className="btn btn-primary"
+                                      style={{ padding: '4px 12px', fontSize: '10px' }}
+                                    >
+                                      Mark as Paid
+                                    </button>
+                                  ) : currentUserRole === 'admin' ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        markRecurringBillPaid(recurring.id, member.id)
+                                      }}
+                                      className="btn btn-secondary"
+                                      style={{ padding: '4px 12px', fontSize: '10px' }}
+                                    >
+                                      Mark {member.name.split(' ')[0]} Paid
+                                    </button>
+                                  ) : (
+                                    <span className="badge" style={{ background: '#ccc' }}>UNPAID</span>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>
