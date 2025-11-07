@@ -99,7 +99,6 @@ export default function HouseholdClient({
   const [loadingPayments, setLoadingPayments] = useState<string | null>(null)
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([])
   const [showAddRecurring, setShowAddRecurring] = useState(false)
-  const [showRecurringList, setShowRecurringList] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loadingHouseholdData, setLoadingHouseholdData] = useState(false)
@@ -1088,80 +1087,6 @@ export default function HouseholdClient({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Recurring Expenses List Modal */}
-      {showRecurringList && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h2 className="modal-title">Recurring Bills</h2>
-
-            {recurringExpenses.length === 0 ? (
-              <p className="text-muted mb-md">No recurring bills yet. Add one below!</p>
-            ) : (
-              <div className="mb-md">
-                <p className="text-sm text-muted mb-md">
-                  These bills repeat automatically. Your share is calculated based on the number of household members.
-                </p>
-                {recurringExpenses.map((recurring) => {
-                  const yourShare = recurring.amount / members.length
-
-                  return (
-                    <div key={recurring.id} className="list-item" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch' }}>
-                      <div className="flex-between mb-sm">
-                        <div>
-                          <p className="text-bold">{recurring.description}</p>
-                          <p className="text-sm text-muted">
-                            {recurring.frequency.charAt(0).toUpperCase() + recurring.frequency.slice(1)}
-                            {recurring.dayOfMonth && ` • Due ${recurring.dayOfMonth}${getDaySuffix(recurring.dayOfMonth)} of each month`}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => deleteRecurringExpense(recurring.id)}
-                          className="btn btn-secondary"
-                          style={{ padding: '4px 12px', fontSize: '10px' }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-
-                      <div style={{ padding: '12px', background: '#f9f9f9', border: '1px solid #ddd' }}>
-                        <div className="flex-between">
-                          <div>
-                            <p className="text-sm text-muted">Total Bill</p>
-                            <p className="text-bold">£{(recurring.amount / 100).toFixed(2)}</p>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <p className="text-sm text-muted">Your Share ({members.length} {members.length === 1 ? 'person' : 'people'})</p>
-                            <p className="text-bold" style={{ color: 'var(--accent)' }}>£{(yourShare / 100).toFixed(2)}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            <div className="grid grid-2 gap-md mt-md">
-              <button
-                onClick={() => {
-                  setShowRecurringList(false)
-                  setShowAddRecurring(true)
-                }}
-                className="btn btn-primary"
-              >
-                Add Bill
-              </button>
-              <button
-                onClick={() => setShowRecurringList(false)}
-                className="btn btn-secondary"
-              >
-                Close
-              </button>
-            </div>
           </div>
         </div>
       )}
