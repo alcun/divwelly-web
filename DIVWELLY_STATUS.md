@@ -5,16 +5,17 @@
 
 ---
 
-## ✅ COMPLETED TODAY
+## ✅ COMPLETED (Ready for Testing)
 
 ### Core Features Working
-- ✅ **Recurring Bills** - Front and center on household page
+- ✅ **Recurring Bills** - Front and center on household page (NOT in modal!)
 - ✅ **Payment Tracking** - Mark individual portions as paid
 - ✅ **Edit/Delete Expenses** - Full CRUD for expenses
 - ✅ **Payment Notes** - Add payment instructions to recurring bills
 - ✅ **Split Calculation** - Automatic per-person share calculation
 - ✅ **Better Auth** - Email/password authentication
 - ✅ **Admin Controls** - Promote members, manage bills
+- ✅ **No Generate Button** - Simplified UX, just see what you owe
 
 ### UX Improvements
 - ✅ Recurring bills show YOUR SHARE prominently
@@ -166,19 +167,108 @@
 ## 🎯 IMMEDIATE PRIORITIES
 
 ### This Week
-1. ✅ Ground-up testing with real data
-2. ✅ Fix any bugs found during testing
-3. ✅ Get housemate using it (real user feedback!)
+1. ⏳ Ground-up testing with real data
+2. ⏳ Fix any bugs found during testing
+3. ⏳ Get housemate using it (real user feedback!)
 
-### Next Week
-1. **Receipt uploads** - Most requested feature
-2. **Payment reminders** - Due date notifications
-3. **WhatsApp integration** - Where people already chat
+### Next Week (Quick Wins)
+1. **Shopping List** 🛒 - Coordinate who buys what
+2. **House Notes** 📝 - Pinboard for household info
+3. **Receipt uploads** - Prove you paid (mobile camera)
 
-### Month 1
-1. Mobile app (Expo)
-2. Bank integration (Monzo first)
-3. 10 active households
+### Month 1 (Game Changers)
+1. **Smart Receipt Scanning** - Photo → Auto-add expense
+2. **Payment Reminders** - Push notifications
+3. **WhatsApp Integration** - Bot for reminders
+4. Mobile app (Expo) for app store presence
+
+---
+
+## 🛒 NEXT FEATURE: Shopping List (1-2 hours)
+
+### What It Does
+Simple shared shopping list so you coordinate what to buy:
+- "We need milk" (Alice adds)
+- Bob sees it, buys it, ticks it off
+- Optional: "Create expense from bought items" (£12 for 3 items)
+
+### How It Works
+**UI:**
+- Small card on household page: "Shopping List (3 items needed)"
+- Click to expand: checkboxes for each item
+- Add item button, mark as bought button
+- Shows who added, who bought
+
+**Schema:**
+```sql
+CREATE TABLE shopping_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  household_id uuid REFERENCES households(id) ON DELETE CASCADE,
+  description text NOT NULL,
+  added_by text REFERENCES "user"(id),
+  bought_by text REFERENCES "user"(id),
+  bought_at timestamp,
+  created_at timestamp DEFAULT now()
+);
+```
+
+**API:**
+- GET /api/shopping-list/household/:id
+- POST /api/shopping-list (description, householdId)
+- PATCH /api/shopping-list/:id/buy (mark as bought)
+- DELETE /api/shopping-list/:id
+
+**The Vibe:**
+- Simple checklist, NOT a discussion board
+- No comments, no prices (until creating expense)
+- Think: "kitchen whiteboard" not "group chat"
+
+### Why This Feature?
+1. You're already splitting groceries
+2. Prevents "I didn't know we needed that"
+3. Natural bridge to expenses (bought items → add expense)
+4. Low complexity, high utility
+
+---
+
+## 📝 FEATURE AFTER THAT: House Notes (1 hour)
+
+### What It Does
+Pinboard for important household stuff:
+- "Boiler repair Tuesday 2-4pm"
+- "WiFi router is in cupboard under stairs"
+- "Landlord inspection on 15th"
+
+### How It Works
+**UI:**
+- Pinned notes at top (bright yellow card)
+- Recent notes below (last 5)
+- Add note button (admins only or everyone?)
+
+**Schema:**
+```sql
+CREATE TABLE house_notes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  household_id uuid REFERENCES households(id) ON DELETE CASCADE,
+  title text NOT NULL,
+  content text,
+  pinned boolean DEFAULT false,
+  expires_at timestamp,
+  created_by text REFERENCES "user"(id),
+  created_at timestamp DEFAULT now()
+);
+```
+
+**The Vibe:**
+- Announcements, NOT discussions
+- No replies, no threads
+- Auto-delete after 30 days (or on expire date)
+- Admin can delete trolling/spam
+
+### Why This Feature?
+1. Replaces chaotic WhatsApp group for official stuff
+2. Info doesn't get buried in chat history
+3. New housemates see important info immediately
 
 ---
 
