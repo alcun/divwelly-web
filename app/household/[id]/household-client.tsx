@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from '@tanstack/react-form'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { logout } from '@/lib/auth-actions'
 
 type Member = {
   id: string
@@ -164,9 +165,9 @@ export default function HouseholdClient({
           [expenseId]: data.payments.map((p: any) => ({
             id: p.payment.id,
             amount: p.payment.amount,
-            isPaid: p.payment.is_paid,
-            paidAt: p.payment.paid_at,
-            receiptUrl: p.payment.receipt_url,
+            isPaid: p.payment.isPaid,
+            paidAt: p.payment.paidAt,
+            receiptUrl: p.payment.receiptUrl,
             user: p.user,
           }))
         }))
@@ -288,7 +289,7 @@ export default function HouseholdClient({
     const previousExpenses = expenses
     setExpenses(expenses.map(e =>
       e.id === expenseId
-        ? { ...e, description, amount: (parseFloat(amount) * 100).toString(), dueDate: dueDate || null }
+        ? { ...e, description, amount: parseFloat(amount).toFixed(2), dueDate: dueDate || null }
         : e
     ))
     setEditingExpense(null)
@@ -522,19 +523,39 @@ export default function HouseholdClient({
     }
   }
 
+  const handleLogout = async () => {
+    await logout()
+  }
+
   return (
     <div className="container">
-      <div className="mb-lg">
+      <div className="mb-lg flex-between">
         <Link href="/dashboard" className="link">
           ← Back to Dashboard
         </Link>
+        <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>
+          Logout
+        </button>
       </div>
 
       <div className="card">
         <div className="flex-between mb-lg">
           <div>
             <h1 className="mb-sm">🏡 {initialHousehold.name}</h1>
-            <p className="text-sm text-muted">Invite Code: {initialHousehold.inviteCode}</p>
+            <div className="flex gap-sm" style={{ alignItems: 'center' }}>
+              <p className="text-sm text-muted">Invite Code: <strong>{initialHousehold.inviteCode}</strong></p>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(initialHousehold.inviteCode)
+                  toast.success('Invite code copied!')
+                }}
+                className="btn btn-secondary"
+                style={{ padding: '4px 8px', fontSize: '10px' }}
+              >
+                Copy
+              </button>
+            </div>
+            <p className="text-sm text-muted">{members.length} member{members.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="flex gap-sm">
             <button
@@ -569,9 +590,8 @@ export default function HouseholdClient({
               const isExpanded = expandedRecurringBill === recurring.id
               const payments = recurringBillPayments[recurring.id] || []
 
-              // Get current month (YYYY-MM-01)
+              // Get current month for filtering
               const now = new Date()
-              const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
 
               // Filter current month payments
               const currentMonthPayments = payments.filter(p => {
@@ -704,6 +724,25 @@ export default function HouseholdClient({
         </div>
       )}
 
+      {/* Balances */}
+      {balances.length > 0 && (
+        <div className="card" style={{ border: '2px solid var(--accent)' }}>
+          <div className="card-header">
+            <h2>💰 Balances</h2>
+          </div>
+          <div>
+            {balances.map((balance, idx) => (
+              <div key={idx} className="list-item flex-between" style={{ cursor: 'default', padding: '16px' }}>
+                <span style={{ fontSize: '16px' }}>
+                  <strong>{balance.from}</strong> owes <strong>{balance.to}</strong>
+                </span>
+                <span className="text-bold" style={{ color: 'var(--accent)', fontSize: '20px' }}>£{balance.amount}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Household Info */}
       <div className="card">
         <div className="card-header">
@@ -787,25 +826,6 @@ export default function HouseholdClient({
           )}
         </div>
       </div>
-
-      {/* Balances */}
-      {balances.length > 0 && (
-        <div className="card">
-          <div className="card-header">
-            <h2>Balances</h2>
-          </div>
-          <div>
-            {balances.map((balance, idx) => (
-              <div key={idx} className="list-item flex-between" style={{ cursor: 'default' }}>
-                <span>
-                  <strong>{balance.from}</strong> owes <strong>{balance.to}</strong>
-                </span>
-                <span className="text-bold" style={{ color: 'var(--accent)' }}>£{balance.amount}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Members */}
       <div className="card">
@@ -1439,7 +1459,7 @@ export default function HouseholdClient({
                   type="number"
                   step="0.01"
                   required
-                  defaultValue={(parseFloat(editingExpense.amount) / 100).toFixed(2)}
+                  defaultValue={editingExpense.amount}
                   className="form-input"
                   placeholder="0.00"
                 />

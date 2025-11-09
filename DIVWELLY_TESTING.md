@@ -48,6 +48,7 @@ SELECT COUNT(*) FROM households;  -- Should be 0
 - Session works: YES / NO
 
 ---
+STATUS: Signed off and working
 
 ## 🏠 Step 2: Create Household
 
@@ -62,6 +63,7 @@ SELECT COUNT(*) FROM households;  -- Should be 0
 **Take Note:**
 - Household ID: ___________
 - Invite Code: ___________
+STATUS: Signed off and working
 
 ---
 
@@ -77,6 +79,7 @@ SELECT COUNT(*) FROM households;  -- Should be 0
 3. Save
 4. ✅ Info displays correctly
 5. ✅ WiFi password hidden by default
+STATUS: Signed off and working
 
 ---
 
@@ -115,7 +118,9 @@ SELECT COUNT(*) FROM households;  -- Should be 0
 - Your share = full amount (solo): YES / NO
 
 ---
+STATUS: Signed off and working
 
+**Answer to reset question:** YES - Payment status automatically resets each month. The system tracks payments by month (stored as YYYY-MM-01), so when a new month starts, there are no payment records for that month yet. Everyone will show as UNPAID until they mark their portion as paid for the new month. 
 ## 👥 Step 5: Add Second Member
 
 **Open Incognito/Different Browser:**
@@ -142,6 +147,7 @@ SELECT COUNT(*) FROM households;  -- Should be 0
 - ✅ Shares recalculated: £447.50 and £82.50
 
 ---
+STATUS: Signed off and working
 
 ## 💸 Step 6: Add One-Off Expense
 
@@ -185,6 +191,8 @@ SELECT COUNT(*) FROM households;  -- Should be 0
 5. Click "Mark as Paid"
 6. ✅ Both now show PAID ✅
 
+
+ISSUE - paid updates but dissappears on refresh - not liek with recurring bill
 ---
 
 ## 📊 Step 8: Check Balances
@@ -216,6 +224,9 @@ SELECT COUNT(*) FROM households;  -- Should be 0
 6. ✅ Shares recalculated: £32.50 each
 
 ---
+
+
+ISSUE: there is a problem with edit - the amount so liek 250 quid shows as 0.25
 
 ## 🗑️ Step 10: Delete Expense
 

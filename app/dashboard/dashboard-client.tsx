@@ -117,23 +117,32 @@ export default function DashboardClient({ initialHouseholds }: Props) {
 
   return (
     <div className="container">
-      <div className="flex-between mb-lg">
-        <h1>Divwelly</h1>
-        <button
-          onClick={handleLogout}
-          className="btn btn-secondary"
-        >
-          Logout
-        </button>
+      <div className="card" style={{ background: 'linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%)', color: 'white', border: 'none' }}>
+        <div className="flex-between">
+          <div>
+            <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>🏠 Divwelly</h1>
+            <p style={{ opacity: 0.9 }}>Manage your household expenses together</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="btn"
+            style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       <div className="card">
         <div className="card-header">
-          <h2>Your Households</h2>
+          <h2>Your Households {households.length > 0 && `(${households.length})`}</h2>
         </div>
 
         {households.length === 0 ? (
-          <p className="text-muted mb-lg">No households yet. Create one or join with an invite code.</p>
+          <div style={{ textAlign: 'center', padding: '32px 16px' }}>
+            <p className="text-bold mb-sm" style={{ fontSize: '18px' }}>Welcome to Divwelly!</p>
+            <p className="text-muted mb-lg">Create your first household or join one with an invite code to get started.</p>
+          </div>
         ) : (
           <div className="mb-lg">
             {households.map(({ household, member }) => (
@@ -141,14 +150,17 @@ export default function DashboardClient({ initialHouseholds }: Props) {
                 key={household.id}
                 href={`/household/${household.id}`}
                 className="list-item"
+                style={{ padding: '20px' }}
               >
                 <div className="flex-between">
                   <div>
-                    <h3 className="mb-sm">{household.name}</h3>
+                    <h3 className="mb-sm" style={{ fontSize: '20px' }}>🏡 {household.name}</h3>
                     <p className="text-sm text-muted">
-                      Role: {member.role} • Code: {household.inviteCode}
+                      <span className="badge" style={{ marginRight: '8px' }}>{member.role}</span>
+                      Invite Code: <strong>{household.inviteCode}</strong>
                     </p>
                   </div>
+                  <span style={{ fontSize: '24px' }}>→</span>
                 </div>
               </Link>
             ))}
