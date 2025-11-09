@@ -36,14 +36,20 @@ export async function getSession() {
 
 export async function logout() {
   const cookieStore = await cookies()
+  const sessionToken = cookieStore.get('__Secure-better-auth.session_token')
+    || cookieStore.get('better-auth.session_token')
 
-  try {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/sign-out`, {
-      method: 'POST',
-      credentials: 'include',
-    })
-  } catch (error) {
-    console.error('Logout failed:', error)
+  if (sessionToken) {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/sign-out`, {
+        method: 'POST',
+        headers: {
+          Cookie: `${sessionToken.name}=${sessionToken.value}`,
+        },
+      })
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
   }
 
   // Delete both possible cookie names
