@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from 'sonner';
-import LoggerLizardTracker from '@/components/loggerlizard-tracker';
+import Script from 'next/script';
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,9 +29,17 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <LoggerLizardTracker />
         {children}
         <Toaster position="top-right" richColors />
+
+        {/* LoggerLizard Analytics */}
+        {process.env.NEXT_PUBLIC_LOGGERLIZARD_API_KEY && (
+          <Script
+            src="/lib/loggerlizard.js"
+            strategy="afterInteractive"
+            type="module"
+          />
+        )}
       </body>
     </html>
   );
