@@ -41,12 +41,15 @@ app/
 │   ├── page.tsx                  # SSR household detail page
 │   └── household-client.tsx      # Client component (add expense, interactions)
 ├── globals.css                   # Custom brutalist CSS system
-└── layout.tsx                    # Root layout
+└── layout.tsx                    # Root layout with analytics
+
+components/
+└── loggerlizard-tracker.tsx     # LoggerLizard analytics integration
 
 lib/
 └── auth-actions.ts               # Server actions (getSession, logout)
 
-middleware.ts                     # Protects /dashboard and /household routes
+middleware.ts                     # Auth + redirects (protects routes, redirects logged-in from auth pages)
 ```
 
 ### Backend Structure
@@ -55,10 +58,11 @@ src/
 ├── index.ts                      # Main Hono app setup
 ├── auth.ts                       # Better Auth configuration
 ├── db.ts                         # Database connection
-├── schema.ts                     # Drizzle schema (users, households, expenses, etc.)
+├── schema.ts                     # Drizzle schema (users, households, expenses, recurring, payments)
 └── routes/
-    ├── households.ts             # Household CRUD + join
-    └── expenses.ts               # Expense CRUD
+    ├── households.ts             # Household CRUD + join + members
+    ├── expenses.ts               # Expense CRUD + payment tracking
+    └── recurring-expenses.ts     # Recurring bills + monthly payment tracking
 
 middleware/
 └── auth.ts                       # requireAuth middleware
@@ -102,6 +106,37 @@ middleware/
 - description (text)
 - amount (decimal)
 - paidById (uuid, fk -> users)
+- dueDate (date, optional)
+- createdAt, updatedAt
+
+### expensePayments
+- id (uuid, pk)
+- expenseId (uuid, fk -> expenses)
+- userId (uuid, fk -> users)
+- amount (decimal)
+- isPaid (boolean)
+- paidAt (timestamp, optional)
+- receiptUrl (text, optional)
+- createdAt, updatedAt
+
+### recurringExpenses
+- id (uuid, pk)
+- householdId (uuid, fk -> households)
+- name (text)
+- amount (decimal)
+- frequency (text: 'monthly' | 'weekly' | 'yearly')
+- startDate (date)
+- endDate (date, optional)
+- isActive (boolean)
+- lastGenerated (timestamp, optional)
+- createdAt, updatedAt
+
+### recurringBillPayments
+- id (uuid, pk)
+- recurringExpenseId (uuid, fk -> recurringExpenses)
+- userId (uuid, fk -> users)
+- month (date) - First day of month (YYYY-MM-01)
+- paidAt (timestamp)
 - createdAt, updatedAt
 
 ---
@@ -127,6 +162,18 @@ middleware/
 
 ### Expenses
 - `POST /api/expenses` - Create expense
+- `PATCH /api/expenses/:id` - Update expense (description, amount, dueDate)
+- `DELETE /api/expenses/:id` - Delete expense
+- `GET /api/expenses/:id/payments` - Get payment tracking for expense
+- `POST /api/expenses/:expenseId/payments/:userId/mark-paid` - Mark user's payment as paid
+- `POST /api/expenses/:expenseId/payments/:userId/upload-receipt` - Upload receipt (image upload)
+
+### Recurring Expenses
+- `POST /api/recurring-expenses` - Create recurring bill
+- `PATCH /api/recurring-expenses/:id` - Update recurring bill
+- `DELETE /api/recurring-expenses/:id` - Delete (deactivate) recurring bill
+- `GET /api/households/:id/recurring-expenses` - List household's recurring bills
+- `POST /api/recurring-expenses/:id/mark-paid` - Mark your portion as paid for current month
 
 ---
 
@@ -166,43 +213,64 @@ middleware/
 
 ## Key Features (Implemented)
 
-✅ User registration and login
-✅ Create households
+### Core Functionality
+✅ User registration and login (email/password via Better Auth)
+✅ Create households with auto-generated invite codes
 ✅ Join households with invite codes
-✅ Add expenses (splits evenly among all members)
-✅ View balances (calculated automatically)
+✅ Add/edit/delete one-off expenses
+✅ Payment tracking for expenses (who has/hasn't paid)
+✅ Mark payments as paid + upload receipt screenshots
+✅ Recurring bills (rent, council tax, utilities)
+✅ Monthly payment tracking for recurring bills
+✅ Auto-reset recurring payments each month
+✅ View balances (calculated automatically - who owes whom)
 ✅ View household members
-✅ Household info management (address, postcode, WiFi, bins, emergency contacts, notes)
-✅ WiFi password with show/hide toggle
 ✅ Promote members to admin
-✅ Admin-only controls for editing household info
+
+### Household Info
+✅ Address, postcode
+✅ WiFi name/password with show/hide toggle
+✅ Bin collection schedule
+✅ Emergency contacts
+✅ General notes
+✅ Admin-only controls for editing
+
+### UX/UI
 ✅ SSR for dashboard and household pages
 ✅ Cookie-based auth across subdomains
 ✅ Brutalist design system
+✅ Logout buttons on all pages
+✅ Copy invite code button
+✅ Prominent balances display
+✅ Improved dashboard with gradient header
+✅ Auth redirects (logged-in users redirected from /login to /dashboard)
+
+### Analytics
+✅ LoggerLizard integration (@loggerlizard/lizard npm package)
+✅ Auto-tracking: page views, clicks, forms, scroll depth, errors
+✅ Optional via environment variables
 
 ---
 
 ## Known Limitations / TODOs
 
 ### Missing Features
-- Cannot edit or delete expenses
-- Cannot settle up / mark balances as paid
 - No expense categories or tags
-- No date filtering
-- No recurring expenses
-- No custom split amounts
+- No date filtering for expenses
+- No custom split amounts (always even split)
 - No user profile/settings page
 - No way to leave or delete household
-- No expense history or activity log
 - Cannot demote admins back to members
+- No settle up flow (balances are auto-calculated, no formal settlement)
+- No expense search
+- No notifications/reminders for unpaid bills
 
 ### Technical Debt
-- No loading states in some places
-- Limited error handling
-- No optimistic UI updates
+- Loading states could be improved in some areas
+- Error handling could be more comprehensive
+- Some optimistic UI updates implemented, could expand
 - No automated tests
-- No expense validation beyond required fields
-- Balance calculation happens on-demand (could be cached)
+- Balance calculation happens on-demand (could be cached for performance)
 
 ---
 
@@ -211,6 +279,9 @@ middleware/
 ### Frontend (.env.local)
 ```
 NEXT_PUBLIC_API_URL=https://api.divwelly.com
+
+# Optional: LoggerLizard Analytics
+NEXT_PUBLIC_LOGGERLIZARD_API_KEY=llz_pub_your_key_here
 ```
 
 ### Backend (.env)
